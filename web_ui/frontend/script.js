@@ -1,4 +1,4 @@
-const BACKEND_URL = 'http://127.0.0.1:8080'; // Thay đổi URL này thành URL của Render khi deploy
+const BACKEND_URL = 'https://remove-background-tool.onrender.com'; // Thay đổi URL này thành URL của Render khi deploy
 
 document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('drop-zone');
