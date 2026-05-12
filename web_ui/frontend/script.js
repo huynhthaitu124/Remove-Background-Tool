@@ -55,6 +55,40 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSingleFilename = null;
     let currentBatchBlob = null;
 
+    // --- ZIP Extraction Logic ---
+    async function extractZip(zipFile) {
+        const extractedFiles = [];
+        try {
+            if (typeof JSZip === 'undefined') {
+                throw new Error('Thư viện JSZip chưa được tải!');
+            }
+            const jszip = new JSZip();
+            const zip = await jszip.loadAsync(zipFile);
+            
+            const promises = [];
+            zip.forEach((relativePath, zipEntry) => {
+                if (zipEntry.dir) return;
+                const lowerName = zipEntry.name.toLowerCase();
+                if (!lowerName.endsWith('.jpg') && !lowerName.endsWith('.jpeg') && !lowerName.endsWith('.png')) return;
+                if (relativePath.includes('__MACOSX') || zipEntry.name.split('/').pop().startsWith('.')) return;
+                
+                promises.push(
+                    zipEntry.async('blob').then(blob => {
+                        const fileName = zipEntry.name.split('/').pop();
+                        const fileType = lowerName.endsWith('.png') ? 'image/png' : 'image/jpeg';
+                        const file = new File([blob], fileName, { type: fileType });
+                        extractedFiles.push(file);
+                    })
+                );
+            });
+            await Promise.all(promises);
+        } catch (error) {
+            console.error('Lỗi giải nén ZIP:', error);
+            alert('Có lỗi khi bung file ZIP: ' + zipFile.name + '\n' + error.message);
+        }
+        return extractedFiles;
+    }
+
     // --- Drag and Drop Logic ---
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -79,9 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
         async function readEntry(entry) {
             if (entry.isFile) {
                 return new Promise((resolve) => {
-                    entry.file(file => {
+                    entry.file(async (file) => {
                         if (file.type.startsWith('image/')) {
                             files.push(file);
+                        } else if (file.name.toLowerCase().endsWith('.zip') || file.type === 'application/zip') {
+                            const extracted = await extractZip(file);
+                            files.push(...extracted);
                         }
                         resolve();
                     });
@@ -118,9 +155,20 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', (e) => {
-        const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+    fileInput.addEventListener('change', async (e) => {
+        let files = [];
+        const inputFiles = Array.from(e.target.files);
+        for (const f of inputFiles) {
+            if (f.type.startsWith('image/')) {
+                files.push(f);
+            } else if (f.name.toLowerCase().endsWith('.zip') || f.type === 'application/zip') {
+                const extracted = await extractZip(f);
+                files.push(...extracted);
+            }
+        }
         handleFiles(files);
+        // Reset giá trị input để chọn lại file cùng tên không bị lỗi
+        e.target.value = '';
     });
 
     function handleFiles(files) {
