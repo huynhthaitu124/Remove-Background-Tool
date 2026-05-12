@@ -39,4 +39,5 @@ RUN python -c "from backgroundremover.u2net.detect import load_model; load_model
 EXPOSE 8080
 
 # Lệnh chạy Production Server bằng Gunicorn
-CMD ["gunicorn", "-w", "2", "--timeout", "120", "-b", "0.0.0.0:8080", "app:app"]
+# Sử dụng shell form để nhận diện biến môi trường $PORT của Render
+CMD gunicorn -w 2 --timeout 120 -b 0.0.0.0:${PORT:-8080} app:app
