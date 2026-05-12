@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Cài đặt các thư viện hệ thống cần thiết cho PyTorch và OpenCV (nếu dùng)
 RUN apt-get update && apt-get install -y \
+    build-essential \
     libgl1-mesa-glx \
     libglib2.0-0 \
     ffmpeg \
@@ -17,6 +18,9 @@ COPY ./backgroundremover /app/backgroundremover
 COPY ./setup.py /app/setup.py
 COPY ./README.md /app/README.md
 COPY ./requirements.txt /app/requirements.txt
+
+# Cài đặt PyTorch bản CPU (nhẹ hơn rất nhiều, tránh lỗi Out of Memory trên Render)
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Cài đặt backgroundremover
 RUN pip install --no-cache-dir -e .
