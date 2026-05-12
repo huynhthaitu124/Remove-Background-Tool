@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Background Remover</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Background Remover</h1>
+            <p>Tối giản & Hiệu quả. Kéo thả file hoặc thư mục để bắt đầu.</p>
+        </header>
+
+        <main>
+            <div class="settings-panel">
+                <div class="setting-item">
+                    <label for="model-select">AI Model:</label>
+                    <select id="model-select">
+                        <option value="u2net" selected>U2Net (Độ nét cao nhất)</option>
+                        <option value="u2netp">U2NetP (Xử lý nhanh)</option>
+                        <option value="u2net_human_seg">U2Net Human (Tách chân dung)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="mask-threshold">Độ sắc nét viền (Edge Hardness):</label>
+                    <select id="mask-threshold">
+                        <option value="">Mặc định (Soft Mask)</option>
+                        <option value="128" selected>Sắc nét (Tốt nhất cho Xe, Đồ vật)</option>
+                        <option value="180">Cực kỳ sắc nét</option>
+                    </select>
+                </div>
+                <div class="setting-item checkbox" style="margin-top: 1.5rem;">
+                    <input type="checkbox" id="alpha-matting">
+                    <label for="alpha-matting">Bật Alpha Matting (Tách tóc, lông thú)</label>
+                </div>
+            </div>
+
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p>Kéo thả ảnh hoặc <strong>thư mục</strong> vào đây</p>
+                    <span class="text-sm text-gray">Hoặc click để chọn file</span>
+                </div>
+                <input type="file" id="file-input" multiple accept="image/jpeg, image/png, image/jpg" class="hidden">
+            </div>
+
+            <!-- Single Image View -->
+            <div id="single-view" class="view-panel hidden">
+                <h3>Kết quả</h3>
+                <div class="image-comparison">
+                    <img id="result-image" alt="Result" />
+                    <div class="loading-overlay hidden" id="single-loading">
+                        <div class="spinner"></div>
+                        <p>Đang xử lý...</p>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="download-btn" class="btn primary">Tải về (.png)</button>
+                    <button id="reset-single-btn" class="btn secondary">Tải ảnh khác</button>
+                </div>
+            </div>
+
+            <!-- Batch Processing View -->
+            <div id="batch-view" class="view-panel hidden">
+                <h3>Xử lý Hàng loạt (Batch Mode)</h3>
+                <div class="batch-stats">
+                    <p>Tổng số ảnh: <span id="total-files">0</span></p>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <p id="batch-status" class="status-text">Đang chuẩn bị...</p>
+
+                <ul class="file-list" id="file-list">
+                    <!-- File items will be appended here -->
+                </ul>
+
+                <div class="actions">
+                    <button id="download-zip-btn" class="btn primary hidden">Tải toàn bộ (.zip)</button>
+                    <button id="reset-batch-btn" class="btn secondary">Tải thư mục khác</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
