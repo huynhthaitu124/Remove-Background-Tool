@@ -32,9 +32,8 @@ WORKDIR /app/backend
 # Cài đặt thư viện cho Flask Backend
 RUN pip install --no-cache-dir flask flask-cors gunicorn
 
-# Pre-download mô hình AI (u2net) để không bị tải lại mỗi khi restart
-RUN mkdir -p ~/.u2net && \
-    wget -O ~/.u2net/u2net.pth https://github.com/nadermx/backgroundremover/releases/download/v0.1.0/u2net.pth || true
+# Pre-download mô hình AI (u2net) bằng chính thư viện của nó để không bị lỗi 404 và không tải lại khi restart
+RUN python -c "from backgroundremover.u2net.detect import load_model; load_model('u2net')" || true
 
 # Mở cổng 8080
 EXPOSE 8080
