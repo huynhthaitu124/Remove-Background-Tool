@@ -7,7 +7,7 @@ WORKDIR /app
 # Cài đặt các thư viện hệ thống cần thiết cho PyTorch và OpenCV (nếu dùng)
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     ffmpeg \
     wget \
