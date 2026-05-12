@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://remove-background-tool.onrender.com'; // Thay đổi URL này thành URL của Render khi deploy
+// Backend URL sẽ được lấy động từ giao diện
 
 document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('drop-zone');
@@ -24,6 +24,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelSelect = document.getElementById('model-select');
     const alphaMatting = document.getElementById('alpha-matting');
     const maskThreshold = document.getElementById('mask-threshold');
+    const backendUrlInput = document.getElementById('backend-url');
+
+    // Initialize backend URL from localStorage or default
+    const savedBackendUrl = localStorage.getItem('bg_remover_backend_url');
+    if (savedBackendUrl) {
+        backendUrlInput.value = savedBackendUrl;
+    } else {
+        // Mặc định cho local development nếu chưa có
+        backendUrlInput.value = 'http://127.0.0.1:8080';
+    }
+
+    // Lắng nghe thay đổi để lưu lại
+    backendUrlInput.addEventListener('change', (e) => {
+        let url = e.target.value.trim();
+        // Xóa dấu slash ở cuối nếu có
+        if (url.endsWith('/')) {
+            url = url.slice(0, -1);
+        }
+        e.target.value = url;
+        localStorage.setItem('bg_remover_backend_url', url);
+    });
+
+    // Helper function lấy backend URL hiện tại
+    function getBackendUrl() {
+        return backendUrlInput.value.trim() || 'http://127.0.0.1:8080';
+    }
 
     let currentSingleBlob = null;
     let currentSingleFilename = null;
@@ -129,7 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('mask_threshold', maskThreshold.value);
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/process-single`, {
+            const currentBackendUrl = getBackendUrl();
+            const response = await fetch(`${currentBackendUrl}/api/process-single`, {
                 method: 'POST',
                 body: formData
             });
@@ -188,9 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('mask_threshold', maskThreshold.value);
 
         try {
+            const currentBackendUrl = getBackendUrl();
             // Processing all at once on backend for simplicity in this version
             // In a production app, we would stream or do one by one via WebSocket
-            const response = await fetch(`${BACKEND_URL}/api/process-batch`, {
+            const response = await fetch(`${currentBackendUrl}/api/process-batch`, {
                 method: 'POST',
                 body: formData
             });

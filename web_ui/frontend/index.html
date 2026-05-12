@@ -16,6 +16,12 @@
 
         <main>
             <div class="settings-panel">
+                <div class="setting-item full-width">
+                    <label for="backend-url">Cấu hình Máy Chủ (Backend URL):</label>
+                    <input type="text" id="backend-url" placeholder="VD: https://abcd-123.ngrok.app" class="text-input">
+                    <span class="text-sm text-gray">Khởi động ngrok localtunnel và dán link vào đây để Vercel gọi về máy bạn.</span>
+                </div>
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
                 <div class="setting-item">
                     <label for="model-select">AI Model:</label>
                     <select id="model-select">
