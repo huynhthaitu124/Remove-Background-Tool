@@ -158,6 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentBackendUrl = getBackendUrl();
             const response = await fetch(`${currentBackendUrl}/api/process-single`, {
                 method: 'POST',
+                headers: {
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: formData
             });
 
@@ -220,6 +223,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // In a production app, we would stream or do one by one via WebSocket
             const response = await fetch(`${currentBackendUrl}/api/process-batch`, {
                 method: 'POST',
+                headers: {
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: formData
             });
 
