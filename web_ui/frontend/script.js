@@ -28,11 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize backend URL from localStorage or default
     const savedBackendUrl = localStorage.getItem('bg_remover_backend_url');
-    if (savedBackendUrl) {
+    if (savedBackendUrl && savedBackendUrl !== 'http://127.0.0.1:8080') {
         backendUrlInput.value = savedBackendUrl;
     } else {
-        // Mặc định cho local development nếu chưa có
-        backendUrlInput.value = 'http://127.0.0.1:8080';
+        // Cố định ngrok URL hiện tại theo yêu cầu
+        backendUrlInput.value = 'https://b26e-2402-800-63b9-fd3b-41b4-1552-669a-527e.ngrok-free.app';
     }
 
     // Lắng nghe thay đổi để lưu lại
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function lấy backend URL hiện tại
     function getBackendUrl() {
-        return backendUrlInput.value.trim() || 'http://127.0.0.1:8080';
+        return backendUrlInput.value.trim() || 'https://b26e-2402-800-63b9-fd3b-41b4-1552-669a-527e.ngrok-free.app';
     }
 
     let currentSingleBlob = null;
