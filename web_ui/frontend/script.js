@@ -18,12 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const batchStatus = document.getElementById('batch-status');
     const fileListEl = document.getElementById('file-list');
     const downloadZipBtn = document.getElementById('download-zip-btn');
+    const stopBatchBtn = document.getElementById('stop-batch-btn');
     const resetBatchBtn = document.getElementById('reset-batch-btn');
     
     // Settings
     const modelSelect = document.getElementById('model-select');
     const alphaMatting = document.getElementById('alpha-matting');
     const maskThreshold = document.getElementById('mask-threshold');
+    const fit32 = document.getElementById('fit-3-2');
     const backendUrlInput = document.getElementById('backend-url');
 
     // Initialize backend URL from localStorage or default
@@ -54,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSingleBlob = null;
     let currentSingleFilename = null;
     let currentBatchBlob = null;
+    let isStopped = false;
 
     // --- ZIP Extraction Logic ---
     async function extractZip(zipFile) {
@@ -201,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('model', modelSelect.value);
         formData.append('alpha_matting', alphaMatting.checked);
         formData.append('mask_threshold', maskThreshold.value);
+        formData.append('fit_3_2', fit32.checked);
 
         try {
             const currentBackendUrl = getBackendUrl();
@@ -248,62 +252,102 @@ document.addEventListener('DOMContentLoaded', () => {
         totalFilesEl.textContent = files.length;
         fileListEl.innerHTML = '';
         downloadZipBtn.classList.add('hidden');
+        stopBatchBtn.classList.remove('hidden');
         progressBar.style.width = '0%';
+        progressBar.style.backgroundColor = 'var(--primary-color)';
+        isStopped = false;
         
-        files.forEach(f => {
+        files.forEach((f, index) => {
             const li = document.createElement('li');
+            li.id = `file-item-${index}`;
             li.innerHTML = `<span>${f.name}</span> <span class="status status-pending">Đang đợi</span>`;
             fileListEl.appendChild(li);
         });
 
-        batchStatus.textContent = 'Đang tải lên và xử lý...';
-        progressBar.style.width = '50%';
+        const currentBackendUrl = getBackendUrl();
+        const batchSize = 20;
+        let processedCount = 0;
 
-        const formData = new FormData();
-        files.forEach(f => formData.append('images', f));
-        formData.append('model', modelSelect.value);
-        formData.append('alpha_matting', alphaMatting.checked);
-        formData.append('mask_threshold', maskThreshold.value);
+        for (let i = 0; i < files.length; i += batchSize) {
+            if (isStopped) {
+                batchStatus.textContent = `Đã dừng xử lý. Hoàn thành ${processedCount}/${files.length} ảnh.`;
+                stopBatchBtn.classList.add('hidden');
+                return;
+            }
 
-        try {
-            const currentBackendUrl = getBackendUrl();
-            // Processing all at once on backend for simplicity in this version
-            // In a production app, we would stream or do one by one via WebSocket
-            const response = await fetch(`${currentBackendUrl}/api/process-batch`, {
-                method: 'POST',
-                headers: {
-                    'ngrok-skip-browser-warning': 'true'
-                },
-                body: formData
+            const chunk = files.slice(i, i + batchSize);
+            const chunkIndices = Array.from({length: chunk.length}, (_, idx) => i + idx);
+            
+            chunkIndices.forEach(idx => {
+                const statusSpan = document.querySelector(`#file-item-${idx} .status`);
+                if(statusSpan) {
+                    statusSpan.textContent = 'Đang xử lý';
+                    statusSpan.className = 'status status-processing';
+                }
             });
 
-            if (!response.ok) throw new Error('Batch processing failed');
+            batchStatus.textContent = `Đang xử lý batch ${Math.floor(i/batchSize) + 1} (${i + 1}-${Math.min(i + batchSize, files.length)})...`;
 
-            currentBatchBlob = await response.blob();
-            
-            progressBar.style.width = '100%';
-            batchStatus.textContent = 'Hoàn tất!';
-            
-            const listItems = fileListEl.querySelectorAll('li .status');
-            listItems.forEach(el => {
-                el.textContent = 'Hoàn tất';
-                el.className = 'status status-done';
-            });
+            const formData = new FormData();
+            chunk.forEach(f => formData.append('images', f));
+            formData.append('model', modelSelect.value);
+            formData.append('alpha_matting', alphaMatting.checked);
+            formData.append('mask_threshold', maskThreshold.value);
+            formData.append('fit_3_2', fit32.checked);
 
-            downloadZipBtn.classList.remove('hidden');
+            try {
+                const response = await fetch(`${currentBackendUrl}/api/process-batch`, {
+                    method: 'POST',
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: formData
+                });
 
-        } catch (error) {
-            console.error(error);
-            batchStatus.textContent = 'Lỗi: ' + error.message;
-            progressBar.style.backgroundColor = 'var(--error-color)';
-            
-            const listItems = fileListEl.querySelectorAll('li .status');
-            listItems.forEach(el => {
-                el.textContent = 'Lỗi';
-                el.className = 'status status-error';
-            });
+                if (!response.ok) throw new Error('Batch processing failed');
+
+                currentBatchBlob = await response.blob();
+                
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(currentBatchBlob);
+                a.download = `processed_images_batch_${Math.floor(i/batchSize) + 1}.zip`;
+                a.click();
+                
+                chunkIndices.forEach(idx => {
+                    const statusSpan = document.querySelector(`#file-item-${idx} .status`);
+                    if(statusSpan) {
+                        statusSpan.textContent = 'Hoàn tất';
+                        statusSpan.className = 'status status-done';
+                    }
+                });
+
+                processedCount += chunk.length;
+                progressBar.style.width = `${(processedCount / files.length) * 100}%`;
+
+            } catch (error) {
+                console.error(error);
+                batchStatus.textContent = `Lỗi tại batch ${Math.floor(i/batchSize) + 1}: ${error.message}`;
+                progressBar.style.backgroundColor = 'var(--error-color)';
+                
+                chunkIndices.forEach(idx => {
+                    const statusSpan = document.querySelector(`#file-item-${idx} .status`);
+                    if(statusSpan) {
+                        statusSpan.textContent = 'Lỗi';
+                        statusSpan.className = 'status status-error';
+                    }
+                });
+                stopBatchBtn.classList.add('hidden');
+                return;
+            }
         }
+        
+        batchStatus.textContent = 'Hoàn tất toàn bộ!';
+        stopBatchBtn.classList.add('hidden');
     }
+
+    stopBatchBtn.addEventListener('click', () => {
+        isStopped = true;
+    });
 
     downloadZipBtn.addEventListener('click', () => {
         if (currentBatchBlob) {

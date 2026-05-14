@@ -240,6 +240,15 @@ select {
     background-color: var(--primary-hover);
 }
 
+.btn.danger {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.btn.danger:hover {
+    background-color: #dc2626;
+}
+
 .btn.secondary {
     background-color: var(--secondary-color);
     color: var(--text-main);

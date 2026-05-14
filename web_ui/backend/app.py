@@ -5,13 +5,50 @@ import zipfile
 import io
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+from PIL import Image
 
 # Add parent directory to path so we can import backgroundremover
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from backgroundremover.bg import remove
 
 app = Flask(__name__)
 CORS(app) # Cho phép Vercel gọi API chéo domain
+
+def process_image_post_remove(output_data, fit_3_2):
+    if not fit_3_2:
+        return output_data
+    try:
+        img = Image.open(io.BytesIO(output_data))
+        if img.mode != 'RGBA':
+            img = img.convert('RGBA')
+        
+        bbox = img.getbbox()
+        if bbox:
+            img = img.crop(bbox)
+        
+        target_w, target_h = 600, 400
+        img_w, img_h = img.size
+        
+        if img_w == 0 or img_h == 0:
+            return output_data
+            
+        scale = min(target_w / img_w, target_h / img_h)
+        new_w = int(img_w * scale)
+        new_h = int(img_h * scale)
+        
+        img_resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        
+        canvas = Image.new('RGBA', (target_w, target_h), (0, 0, 0, 0))
+        paste_x = (target_w - new_w) // 2
+        paste_y = (target_h - new_h) // 2
+        canvas.paste(img_resized, (paste_x, paste_y), img_resized)
+        
+        out_buffer = io.BytesIO()
+        canvas.save(out_buffer, format='PNG')
+        return out_buffer.getvalue()
+    except Exception as e:
+        print(f"Error in process_image_post_remove: {e}")
+        return output_data
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -35,6 +72,7 @@ def process_single():
         alpha_matting = request.form.get('alpha_matting', 'false').lower() == 'true'
         mask_threshold_str = request.form.get('mask_threshold', '')
         mask_threshold = int(mask_threshold_str) if mask_threshold_str else None
+        fit_3_2 = request.form.get('fit_3_2', 'false').lower() == 'true'
         
         # Process image
         output_data = remove(
@@ -47,6 +85,8 @@ def process_single():
             alpha_matting_base_size=1000,
             mask_threshold=mask_threshold
         )
+        
+        output_data = process_image_post_remove(output_data, fit_3_2)
         
         # Determine output filename
         # Ensure it keeps the exact same name but .png
@@ -74,6 +114,7 @@ def process_batch():
     alpha_matting = request.form.get('alpha_matting', 'false').lower() == 'true'
     mask_threshold_str = request.form.get('mask_threshold', '')
     mask_threshold = int(mask_threshold_str) if mask_threshold_str else None
+    fit_3_2 = request.form.get('fit_3_2', 'false').lower() == 'true'
     
     memory_file = io.BytesIO()
     
@@ -96,6 +137,8 @@ def process_batch():
                     alpha_matting_base_size=1000,
                     mask_threshold=mask_threshold
                 )
+                
+                output_data = process_image_post_remove(output_data, fit_3_2)
                 
                 # Determine output filename
                 base_name = os.path.splitext(file.filename)[0]
