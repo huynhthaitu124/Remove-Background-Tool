@@ -26,7 +26,7 @@ def process_image_post_remove(output_data, fit_3_2):
         if bbox:
             img = img.crop(bbox)
         
-        target_w, target_h = 600, 400
+        target_w, target_h = 360, 240
         img_w, img_h = img.size
         
         if img_w == 0 or img_h == 0:
