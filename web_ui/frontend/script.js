@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         backendUrlInput.value = savedBackendUrl;
     } else {
         // Cố định ngrok URL hiện tại theo yêu cầu
-        backendUrlInput.value = 'https://b26e-2402-800-63b9-fd3b-41b4-1552-669a-527e.ngrok-free.app';
+        backendUrlInput.value = 'https://08f7-2402-800-63b9-fd3b-a63f-c929-70b4-f217.ngrok-free.app';
     }
 
     // Lắng nghe thay đổi để lưu lại
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function lấy backend URL hiện tại
     function getBackendUrl() {
-        return backendUrlInput.value.trim() || 'https://b26e-2402-800-63b9-fd3b-41b4-1552-669a-527e.ngrok-free.app';
+        return backendUrlInput.value.trim() || 'https://08f7-2402-800-63b9-fd3b-a63f-c929-70b4-f217.ngrok-free.app';
     }
 
     let currentSingleBlob = null;
